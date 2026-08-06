@@ -24,40 +24,40 @@ def _icon_path() -> Path:
     return Path(__file__).resolve().parents[2] / "Resources" / "icon.png"
 
 
-def _apply_dark_theme(app: QApplication) -> None:
-    """固定 Fusion 风格 + 深色调色板。
+def _apply_light_theme(app: QApplication) -> None:
+    """固定 Fusion 风格 + 浅色调色板。
 
-    面板/卡片本身是深色硬编码样式；若跟随系统主题（尤其 Windows 11 暗色
+    面板/卡片本身是浅色硬编码样式；若跟随系统主题（尤其 Windows 11 暗色
     原生样式），对话框会出现渲染不一致。Fusion 跨平台渲染结果确定。
     """
     app.setStyle("Fusion")
     palette = QPalette()
     colors = {
-        QPalette.ColorRole.Window: "#1f1f1f",
-        QPalette.ColorRole.WindowText: "#eeeeee",
-        QPalette.ColorRole.Base: "#2b2b2b",
-        QPalette.ColorRole.AlternateBase: "#262626",
-        QPalette.ColorRole.ToolTipBase: "#2b2b2b",
-        QPalette.ColorRole.ToolTipText: "#eeeeee",
-        QPalette.ColorRole.Text: "#eeeeee",
-        QPalette.ColorRole.Button: "#2b2b2b",
-        QPalette.ColorRole.ButtonText: "#eeeeee",
+        QPalette.ColorRole.Window: "#f5f5f5",
+        QPalette.ColorRole.WindowText: "#222222",
+        QPalette.ColorRole.Base: "#ffffff",
+        QPalette.ColorRole.AlternateBase: "#f5f5f5",
+        QPalette.ColorRole.ToolTipBase: "#ffffff",
+        QPalette.ColorRole.ToolTipText: "#222222",
+        QPalette.ColorRole.Text: "#222222",
+        QPalette.ColorRole.Button: "#efefef",
+        QPalette.ColorRole.ButtonText: "#222222",
         QPalette.ColorRole.BrightText: "#ef4444",
         QPalette.ColorRole.Highlight: "#3b82f6",
         QPalette.ColorRole.HighlightedText: "#ffffff",
-        QPalette.ColorRole.PlaceholderText: "#8a8a8a",
+        QPalette.ColorRole.PlaceholderText: "#999999",
         QPalette.ColorRole.Link: "#3b82f6",
-        QPalette.ColorRole.Light: "#3a3a3a",
-        QPalette.ColorRole.Midlight: "#333333",
-        QPalette.ColorRole.Mid: "#2e2e2e",
-        QPalette.ColorRole.Dark: "#171717",
-        QPalette.ColorRole.Shadow: "#101010",
+        QPalette.ColorRole.Light: "#ffffff",
+        QPalette.ColorRole.Midlight: "#e8e8e8",
+        QPalette.ColorRole.Mid: "#cfcfcf",
+        QPalette.ColorRole.Dark: "#a5a5a5",
+        QPalette.ColorRole.Shadow: "#bdbdbd",
     }
     for role, hex_color in colors.items():
         palette.setColor(role, QColor(hex_color))
     for role in (QPalette.ColorRole.Text, QPalette.ColorRole.ButtonText,
                  QPalette.ColorRole.WindowText, QPalette.ColorRole.PlaceholderText):
-        palette.setColor(QPalette.ColorGroup.Disabled, role, QColor("#666666"))
+        palette.setColor(QPalette.ColorGroup.Disabled, role, QColor("#aaaaaa"))
     app.setPalette(palette)
 
 
@@ -66,7 +66,7 @@ class UsageBoardApp:
         self._qt = QApplication(sys.argv)
         self._qt.setQuitOnLastWindowClosed(False)
         self._qt.setApplicationName("UsageBoard")
-        _apply_dark_theme(self._qt)
+        _apply_light_theme(self._qt)
 
         icon = QIcon(str(_icon_path()))
         self._qt.setWindowIcon(icon)

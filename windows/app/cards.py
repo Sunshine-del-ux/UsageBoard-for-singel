@@ -90,7 +90,7 @@ class ItemRow(QWidget):
         else:
             bar.setFixedHeight(8)
         bar.setStyleSheet(
-            "QProgressBar { border: none; border-radius: 4px; background: #3a3a3a; }"
+            "QProgressBar { border: none; border-radius: 4px; background: #e6e6e6; }"
             f"QProgressBar::chunk {{ border-radius: 4px; background: {color}; }}"
         )
         layout.addWidget(bar)
@@ -109,8 +109,8 @@ class PluginCard(QFrame):
         super().__init__(parent)
         self.setObjectName("pluginCard")
         self.setStyleSheet(
-            "#pluginCard { background: #2b2b2b; border-radius: 10px; }"
-            "QLabel { color: #eee; background: transparent; }"
+            "#pluginCard { background: #ffffff; border: 1px solid #e3e3e3; border-radius: 10px; }"
+            "QLabel { color: #222; background: transparent; }"
         )
         self._manifest = manifest
         self._layout = QVBoxLayout(self)

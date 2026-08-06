@@ -29,7 +29,7 @@ class Panel(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
         self.setFixedWidth(PANEL_WIDTH)
-        self.setStyleSheet("background: #1f1f1f;")
+        self.setStyleSheet("background: #f3f3f3; border: 1px solid #d9d9d9;")
 
         root = QVBoxLayout(self)
         root.setContentsMargins(10, 8, 10, 10)
@@ -38,7 +38,7 @@ class Panel(QWidget):
         # ─── 顶部工具行 ───
         toolbar = QHBoxLayout()
         title = QLabel("UsageBoard")
-        title.setStyleSheet("color: #eee; font-size: 14px; font-weight: 700;")
+        title.setStyleSheet("color: #222; font-size: 14px; font-weight: 700;")
         toolbar.addWidget(title)
         toolbar.addStretch(1)
 
