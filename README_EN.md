@@ -2,6 +2,8 @@
 
 **[中文](README.md)**
 
+> **Acknowledgement**: This project is based on [marsmay/UsageBoard](https://github.com/marsmay/UsageBoard) — many thanks to the original author for the excellent work! This fork adds a **Windows version** on top of the original macOS app (see [Windows Version](#windows-version) and [windows/README.md](windows/README.md)).
+
 UsageBoard is a native macOS menu bar app that aggregates and displays usage quotas for APIs, model services, search services, proxy services, and more. Each data source is a plugin; the app periodically executes plugins, parses their stdout JSON, and renders usage as progress bars.
 
 ## Features
@@ -50,6 +52,17 @@ UsageBoard is a native macOS menu bar app that aggregates and displays usage quo
     <td align="center">Plugin Settings</td>
   </tr>
 </table>
+
+## Windows Version
+
+This fork additionally provides a Windows port: a **Python + PySide6** system tray app, packaged by PyInstaller into a single portable exe. It shares the same bundled plugins (`Resources/BundledPlugins/`) with the macOS version.
+
+- Resides in the tray; left-click toggles the usage panel at the bottom-right corner, with a collapse button in the panel header
+- 4 bundled API plugins: DeepSeek, Kimi, Zhipu GLM, MiniMax
+- **Multi-account** support for the same plugin type: each instance gets its own label and parameters, rendered as a separate card
+- macOS-style light UI, Chinese/English switching, scheduled auto-refresh (5 minutes by default)
+
+Build and development instructions: [windows/README.md](windows/README.md).
 
 ## Bundled Plugins
 
@@ -398,13 +411,17 @@ Sources/
   UsageBoardApp/        SwiftUI + AppKit macOS app
 Tests/
   UsageBoardTests/      XCTest unit tests
+  windows/              pytest tests for the Windows port
 Resources/
-  BundledPlugins/       Bundled Python plugins
+  BundledPlugins/       Bundled Python plugins (shared by macOS and Windows)
   PluginAuthoringGuide.html
   UsageBoard.icns
+windows/
+  app/                  Windows port (PySide6 tray app)
 scripts/
   build.sh              Local build, sign, and launch
   release.sh            Release script
+  build_windows.bat     Windows packaging (PyInstaller single-file exe)
 dist/
   UsageBoard.app        Local test app bundle
 ```

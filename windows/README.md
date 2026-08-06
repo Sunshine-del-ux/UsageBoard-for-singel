@@ -2,12 +2,16 @@
 
 UsageBoard 的 Windows 版本：基于 **Python + PySide6** 的系统托盘应用，复用 macOS 版的插件体系（进程内调用），单面板卡片式展示用量。
 
+> 本项目基于 [marsmay/UsageBoard](https://github.com/marsmay/UsageBoard) 开发，感谢原项目作者！
+
 ## 功能
 
 - 系统托盘常驻，左键单击弹出/收起用量面板（屏幕右下角，无边框卡片式）
+- 面板顶栏：刷新 / 设置 / 退出 / 收起按钮
 - 内置 4 个 API 插件：DeepSeek、Kimi、智谱 GLM、MiniMax
+- 同类型插件**多账号**：设置页可添加多个账号实例，各自独立备注名与参数（API Key 等），面板按账号分卡展示（标题显示「插件名 · 备注」）
 - 托盘右键菜单：显示面板 / 立即刷新 / 设置 / 退出
-- 设置对话框由插件清单自动生成（API Key、金额上限、统计周期、订阅计划等）
+- 设置对话框由插件清单自动生成（API Key、金额上限、统计周期、订阅计划等），改动在点击保存后才生效，取消丢弃全部修改（包括账号增删）
 - 自动刷新（默认 5 分钟，可在设置中调整，最低 30 秒）
 - 中英文界面（默认跟随系统语言）
 - 配置保存在 `%APPDATA%\UsageBoard\config.json`
@@ -48,11 +52,13 @@ windows/
     tray.py      系统托盘图标与菜单
     panel.py     无边框弹出面板（单面板滚动卡片）
     cards.py     插件卡片与用量条目组件
-    settings.py  设置对话框（由插件清单动态生成表单）
+    settings.py  设置对话框（由插件清单动态生成表单，支持多账号）
     config.py    配置读写（%APPDATA%\UsageBoard\config.json）
     plugins.py   插件发现、清单解析、进程内调用
-    worker.py    QThreadPool 后台刷新
+    worker.py    QThreadPool 后台刷新（结果按卡片 id 路由）
     i18n.py      界面文案（zh-Hans / en）
+    theme.py     macOS 风格浅色主题（调色板 + 样式表）
+    icons.py     矢量图标绘制（刷新 / 设置 / 退出 / 收起）
 ```
 
 插件代码与 macOS 版共用同一来源 `Resources/BundledPlugins/`，构建时经

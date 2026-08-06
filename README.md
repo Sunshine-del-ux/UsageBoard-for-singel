@@ -2,6 +2,8 @@
 
 **[English](README_EN.md)**
 
+> **致谢**：本项目基于 [marsmay/UsageBoard](https://github.com/marsmay/UsageBoard) 开发，感谢原项目作者的出色工作！本分支在原有 macOS 版的基础上新增了 **Windows 版本**（见 [Windows 版本](#windows-版本) 与 [windows/README.md](windows/README.md)）。
+
 UsageBoard 是一个原生 macOS 菜单栏应用，用于聚合展示 API、模型服务、搜索服务、代理服务等各类用量配额。每个数据源都以插件形式存在，主程序负责定时执行插件、解析 stdout JSON，并以进度条展示用量。
 
 ## 功能特性
@@ -50,6 +52,17 @@ UsageBoard 是一个原生 macOS 菜单栏应用，用于聚合展示 API、模�
     <td align="center">插件设置</td>
   </tr>
 </table>
+
+## Windows 版本
+
+本分支额外提供 Windows 移植版：**Python + PySide6** 系统托盘应用，PyInstaller 打包为单文件 exe，免安装双击即用。与 macOS 版共用同一套内置插件（`Resources/BundledPlugins/`）。
+
+- 托盘常驻，左键单击在屏幕右下角弹出/收起用量面板，面板顶栏也有收起按钮
+- 内置 4 个 API 插件：DeepSeek、Kimi、智谱 GLM、MiniMax
+- 支持同类型插件**多账号**：每个实例独立备注名与参数，面板按账号分卡展示
+- macOS 风格浅色界面，中英文切换，定时自动刷新（默认 5 分钟）
+
+构建与开发说明见 [windows/README.md](windows/README.md)。
 
 ## 内置插件
 
@@ -405,13 +418,17 @@ Sources/
   UsageBoardApp/        SwiftUI + AppKit macOS app
 Tests/
   UsageBoardTests/      XCTest 单元测试
+  windows/              Windows 版 pytest 测试
 Resources/
-  BundledPlugins/       内置 Python 插件
+  BundledPlugins/       内置 Python 插件（macOS 与 Windows 版共用）
   PluginAuthoringGuide.html
   UsageBoard.icns
+windows/
+  app/                  Windows 移植版（PySide6 托盘应用）
 scripts/
   build.sh              本地构建、签名、启动
   release.sh            发布脚本
+  build_windows.bat     Windows 打包（PyInstaller 单文件 exe）
 dist/
   UsageBoard.app        本地测试 app bundle
 ```
