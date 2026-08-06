@@ -328,13 +328,13 @@ xattr -cr /Applications/UsageBoard.app
 
 运行：
 
-- macOS 13.0 或更高版本
+- macOS 13.0 或更高版本，支持 Intel 与 Apple Silicon（universal 二进制）
 - 系统可用 `python3`，用于执行 Python 插件
 
 开发：
 
-- Xcode
-- Swift 6.3 toolchain
+- Xcode 或 Command Line Tools
+- Swift 6.2 及以上 toolchain
 
 ## 构建与测试
 

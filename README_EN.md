@@ -321,13 +321,13 @@ xattr -cr /Applications/UsageBoard.app
 
 Runtime:
 
-- macOS 13.0 or later
+- macOS 13.0 or later, on both Intel and Apple Silicon (universal binary)
 - System `python3` available for executing Python plugins
 
 Development:
 
-- Xcode
-- Swift 6.3 toolchain
+- Xcode or Command Line Tools
+- Swift 6.2+ toolchain
 
 ## Build & Test
 

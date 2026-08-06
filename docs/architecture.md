@@ -39,8 +39,9 @@ UsageBoard 是一款 macOS menu bar 工具，用于集中展示各种 AI 服务�
 ```sh
 swift build               # 编译检查
 swift test                # Core 单元测试
-swift build -c release    # release 构建
-bash scripts/build.sh     # 本地 app 构建、签名、启动
+swift build -c release --triple arm64-apple-macosx    # release 构建（arm64）
+swift build -c release --triple x86_64-apple-macosx   # release 构建（x86_64）
+bash scripts/build.sh     # 本地 app 构建（universal：两个 triple 构建后 lipo 合并）、签名、启动
 python3 -m pytest Tests/PluginTests/ -v   # Python 插件测试
 ```
 
