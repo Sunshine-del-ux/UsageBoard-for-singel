@@ -33,6 +33,8 @@ class Panel(QWidget):
             | Qt.WindowType.WindowStaysOnTopHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        # 顶层窗口的样式表背景必须带 WA_StyledBackground，否则 Windows 上不绘制
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setFixedWidth(PANEL_WIDTH)
         self.setObjectName("panelRoot")
         self.setStyleSheet(
