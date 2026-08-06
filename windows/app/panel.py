@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from PySide6.QtCore import QEvent, Qt, Signal
+from PySide6.QtCore import QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QGuiApplication, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget,
@@ -120,17 +120,20 @@ class Panel(QWidget):
             card = PluginCard(manifest)
             self._cards[plugin_id] = card
             self._cards_layout.insertWidget(self._cards_layout.count() - 1, card)
+        self._refit()
 
     def remove_card(self, plugin_id: str) -> None:
         card = self._cards.pop(plugin_id, None)
         if card is not None:
             self._cards_layout.removeWidget(card)
             card.deleteLater()
+        self._refit()
 
     def show_result(self, plugin_id: str, result: dict[str, Any]) -> None:
         card = self._cards.get(plugin_id)
         if card is not None:
             card.show_result(result)
+            self._refit()
 
     def set_refreshing(self, refreshing: bool) -> None:
         self._refresh_button.setEnabled(not refreshing)
@@ -159,6 +162,15 @@ class Panel(QWidget):
         self._container.adjustSize()
         content = self._container.sizeHint().height() + 48  # 顶栏 + 分隔线
         self.setFixedHeight(min(max(content, 160), PANEL_MAX_HEIGHT))
+
+    def _refit(self) -> None:
+        """内容变化后随内容自适应高度（仅在弹层可见时）。
+
+        立即拟合一次，再延迟补一次以覆盖自动换行文本的稳定布局。
+        """
+        if self.isVisible():
+            self._fit_height()
+            QTimer.singleShot(0, self._fit_height)
 
     def changeEvent(self, event: QEvent) -> None:
         if event.type() == QEvent.Type.WindowDeactivate:
