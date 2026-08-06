@@ -17,6 +17,7 @@
 - 提交信息遵循仓库惯例：中文 conventional commits（如 `fix(ui): ...`、`docs: ...`）。
 - 不运行 `scripts/release.sh` 的上传段（scp/ssh 到生产服务器属于用户决定）；只验证其构建逻辑。
 - 每个验证命令的「Expected」必须与实跑结果一致才能进入下一步。
+- 【执行期修订 2026-08-06】本机仅 Command Line Tools，无 XCTest 框架（已实测 `swift build --build-tests` 报 `no such module 'XCTest'`），`swift test` 在本机无法运行。本计划不改任何 Swift 源码，`swift build`（含双架构 release）即覆盖全部编译面；故本机验证以 `swift build` + pytest 为准，XCTest 单元测试保留给装有 Xcode 的机器（如 M 系列 Mac / CI）执行。涉及步骤：Task 1 Step 3、Task 5 Step 2。
 
 ---
 
@@ -48,10 +49,11 @@
 Run: `swift build 2>&1 | tail -5`
 Expected: 输出 `Build complete!`，无 error。若有 6.3 专属语法报错，逐个改写为 6.2 兼容写法后重跑（预期没有）。
 
-- [ ] **Step 3: 运行 Swift 单元测试**
+- [ ] **Step 3: 运行 Swift 单元测试（本机环境受限，见 Global Constraints 修订）**
 
 Run: `swift test 2>&1 | tail -5`
 Expected: 全部测试 PASS（`Test Suite 'All tests' passed`），0 failure。
+本机实测：无 XCTest（CLT only），此步骤在本机不可执行，以 Step 2 的 `swift build` 全量编译替代；XCTest 在有 Xcode 的机器上执行。
 
 - [ ] **Step 4: 安装 pytest 并运行插件测试**
 
@@ -355,14 +357,14 @@ bash scripts/build.sh 2>&1 | tail -6
 
 Expected: 双架构构建 + `二进制架构: ... x86_64 arm64` + 打包 + 启动，无 error。
 
-- [ ] **Step 2: 全量测试**
+- [ ] **Step 2: 全量测试（本机环境受限，见 Global Constraints 修订）**
 
 ```bash
-swift test 2>&1 | tail -3
+swift build 2>&1 | tail -3
 python3 -m pytest Tests/PluginTests/ 2>&1 | tail -3
 ```
 
-Expected: 两端全部 PASS，0 failure / 0 failed。
+Expected: `Build complete!` + pytest 全部 PASSED，0 failed。`swift test` 本机无 XCTest 不可执行，改由有 Xcode 的机器执行。
 
 - [ ] **Step 3: 包内二进制最终确认**
 
