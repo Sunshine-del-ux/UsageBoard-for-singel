@@ -119,16 +119,21 @@ class PluginCard(QFrame):
         self._show_loading()
 
     def _clear(self) -> None:
+        def discard(widget: QWidget) -> None:
+            # 先隐藏再延迟删除：可见状态下 deleteLater 未处理前旧控件仍会绘制
+            widget.hide()
+            widget.deleteLater()
+
         while self._layout.count():
             child = self._layout.takeAt(0)
             widget = child.widget()
             if widget is not None:
-                widget.deleteLater()
+                discard(widget)
             elif child.layout() is not None:
                 while child.layout().count():
                     sub = child.layout().takeAt(0)
                     if sub.widget() is not None:
-                        sub.widget().deleteLater()
+                        discard(sub.widget())
 
     def _header(self, badge: str | None, badge_color: str | None,
                 failed: bool = False) -> None:

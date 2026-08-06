@@ -9,8 +9,8 @@ import sys
 import time
 from typing import Any
 
-from PySide6.QtCore import QEvent, Qt, QTimer, Signal
-from PySide6.QtGui import QGuiApplication, QPixmap
+from PySide6.QtCore import QEvent, QRectF, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
@@ -35,14 +35,7 @@ class Panel(QWidget):
             | Qt.WindowType.WindowStaysOnTopHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        # 顶层窗口的样式表背景必须带 WA_StyledBackground，否则 Windows 上不绘制
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setFixedWidth(PANEL_WIDTH)
-        self.setObjectName("panelRoot")
-        self.setStyleSheet(
-            f"#panelRoot {{ background: {theme.CANVAS};"
-            f" border: 1px solid {theme.CARD_BORDER}; border-radius: 12px; }}"
-        )
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -196,6 +189,15 @@ class Panel(QWidget):
         if self.isVisible():
             self._fit_height()
             QTimer.singleShot(0, self._fit_height)
+
+    def paintEvent(self, event: QEvent) -> None:
+        """手动绘制圆角背景：样式表背景在 Windows 无边框半透明窗口上不可靠。"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+        painter.setPen(QPen(QColor(theme.CARD_BORDER), 1))
+        painter.setBrush(QColor(theme.CANVAS))
+        painter.drawRoundedRect(rect, 12, 12)
 
     def hideEvent(self, event: QEvent) -> None:
         self._hidden_at = time.monotonic()

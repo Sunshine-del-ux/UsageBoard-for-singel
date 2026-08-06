@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QLockFile, QTimer
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 
 from . import i18n, theme
-from .config import Config
+from .config import Config, config_dir
 from .panel import Panel
 from .plugins import all_manifests
 from .settings import SettingsDialog
@@ -28,6 +28,13 @@ def _apply_theme(app: QApplication) -> None:
 
 class UsageBoardApp:
     def __init__(self):
+        # 单实例锁：防止多个 exe 同时运行（旧实例的面板不受新托盘图标控制）
+        config_dir().mkdir(parents=True, exist_ok=True)
+        self._lock = QLockFile(str(config_dir() / "usageboard.lock"))
+        self._lock.setStaleLockTime(0)  # 立即识别崩溃残留的锁
+        if not self._lock.tryLock(100):
+            raise SystemExit(0)
+
         self._qt = QApplication(sys.argv)
         self._qt.setQuitOnLastWindowClosed(False)
         self._qt.setApplicationName("UsageBoard")
