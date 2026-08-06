@@ -49,6 +49,12 @@ def _draw(kind: str, color: QColor, size: int = _RENDER_SIZE) -> QPixmap:
                             c + math.sin(angle) * (r_out + 2.1 * s))
             painter.drawLine(inner, outer)
         painter.drawEllipse(QPointF(c, c), 1.6 * s, 1.6 * s)
+    elif kind == "chevron-down":  # chevron.down：收起弹层
+        left = QPointF(c - 4.6 * s, c - 1.6 * s)
+        mid = QPointF(c, c + 3.0 * s)
+        right = QPointF(c + 4.6 * s, c - 1.6 * s)
+        painter.drawLine(left, mid)
+        painter.drawLine(mid, right)
     else:
         raise ValueError(f"unknown icon kind: {kind}")
 

@@ -26,6 +26,11 @@ STRINGS: dict[str, dict[str, str]] = {
     "no_limit":         {"zh-Hans": "已用 {used}", "en": "Used {used}"},
     "usage_of":         {"zh-Hans": "{used} / {limit}", "en": "{used} / {limit}"},
     "loading":          {"zh-Hans": "加载中…", "en": "Loading…"},
+    "collapse_panel":   {"zh-Hans": "收起面板", "en": "Collapse Panel"},
+    "add_account":      {"zh-Hans": "添加账号", "en": "Add Account"},
+    "account_name":     {"zh-Hans": "备注名称", "en": "Label"},
+    "account_default":  {"zh-Hans": "账号 {n}", "en": "Account {n}"},
+    "remove_account":   {"zh-Hans": "删除", "en": "Remove"},
 }
 
 _current = "zh-Hans"

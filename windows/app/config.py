@@ -6,6 +6,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 APP_NAME = "UsageBoard"
 DEFAULT_REFRESH_INTERVAL_SEC = 300
@@ -30,6 +31,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "language": None,  # None = 跟随系统
     "refreshIntervalSec": DEFAULT_REFRESH_INTERVAL_SEC,
     "plugins": {},
+    "instances": [],  # 同类型插件的额外账号实例
 }
 
 
@@ -100,3 +102,75 @@ class Config:
     def set_plugin_params(self, plugin_id: str, params: dict[str, str]) -> None:
         entry = self.data["plugins"].setdefault(plugin_id, {})
         entry["params"] = {str(k): str(v) for k, v in params.items()}
+
+    # ─── 插件多账号（同类型额外实例） ────────────────────────────────────────
+
+    def plugin_instances(self, plugin_type: str | None = None) -> list[dict[str, Any]]:
+        """额外账号实例列表，每项 {id, type, name, params}。"""
+        instances = self.data.get("instances")
+        if not isinstance(instances, list):
+            return []
+        result: list[dict[str, Any]] = []
+        for item in instances:
+            if not isinstance(item, dict):
+                continue
+            itype = str(item.get("type") or "")
+            iid = str(item.get("id") or "")
+            if not itype or not iid:
+                continue
+            if plugin_type is not None and itype != plugin_type:
+                continue
+            params = item.get("params") or {}
+            result.append({
+                "id": iid,
+                "type": itype,
+                "name": str(item.get("name") or ""),
+                "params": {str(k): str(v) for k, v in params.items()},
+            })
+        return result
+
+    def add_instance(self, plugin_type: str, name: str = "") -> dict[str, Any]:
+        instance = {
+            "id": f"{plugin_type}@{uuid4().hex[:6]}",
+            "type": plugin_type,
+            "name": name,
+            "params": {},
+        }
+        instances = self.data.setdefault("instances", [])
+        if not isinstance(instances, list):
+            instances = []
+            self.data["instances"] = instances
+        instances.append(instance)
+        return dict(instance)
+
+    def remove_instance(self, instance_id: str) -> None:
+        instances = self.data.get("instances")
+        if isinstance(instances, list):
+            self.data["instances"] = [
+                item for item in instances
+                if not (isinstance(item, dict) and item.get("id") == instance_id)
+            ]
+
+    def _find_instance(self, instance_id: str) -> dict[str, Any] | None:
+        instances = self.data.get("instances")
+        if not isinstance(instances, list):
+            return None
+        for item in instances:
+            if isinstance(item, dict) and item.get("id") == instance_id:
+                return item
+        return None
+
+    def rename_instance(self, instance_id: str, name: str) -> None:
+        item = self._find_instance(instance_id)
+        if item is not None:
+            item["name"] = name
+
+    def instance_params(self, instance_id: str) -> dict[str, str]:
+        item = self._find_instance(instance_id)
+        params = (item or {}).get("params") or {}
+        return {str(k): str(v) for k, v in params.items()}
+
+    def set_instance_params(self, instance_id: str, params: dict[str, str]) -> None:
+        item = self._find_instance(instance_id)
+        if item is not None:
+            item["params"] = {str(k): str(v) for k, v in params.items()}

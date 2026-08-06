@@ -20,6 +20,7 @@ from .cards import PluginCard
 
 PANEL_WIDTH = 380       # Mac 弹层宽 380
 PANEL_MAX_HEIGHT = 560
+CHROME_HEIGHT = 48      # 顶栏 + 分隔线
 
 
 class Panel(QWidget):
@@ -75,6 +76,11 @@ class Panel(QWidget):
         quit_button = self._make_tool_button("power", i18n.tr("quit"))
         quit_button.clicked.connect(self.quit_requested)
         header_layout.addWidget(quit_button)
+
+        collapse_button = self._make_tool_button(
+            "chevron-down", i18n.tr("collapse_panel"))
+        collapse_button.clicked.connect(self.hide)
+        header_layout.addWidget(collapse_button)
         root.addWidget(header)
 
         root.addWidget(theme.divider())
@@ -162,6 +168,8 @@ class Panel(QWidget):
         self.show()
         self.raise_()
         self.activateWindow()
+        # 平台布局在 show 后才完全稳定，按最终几何再拟合一次
+        QTimer.singleShot(0, self._fit_height)
 
     @staticmethod
     def _dismiss_tray_flyout() -> None:
@@ -179,9 +187,23 @@ class Panel(QWidget):
     def _fit_height(self) -> None:
         # 可见时记住底边：高度变化要向上生长，否则下沿会超出屏幕遮住托盘
         bottom = self.y() + self.height() if self.isVisible() else None
-        self._container.adjustSize()
-        content = self._container.sizeHint().height() + 48  # 顶栏 + 分隔线
-        self.setFixedHeight(min(max(content, 160), PANEL_MAX_HEIGHT))
+
+        def measure(viewport_width: int) -> int:
+            # 固定容器宽度再激活布局：自动换行文本按真实宽度折行。
+            # 不能用 adjustSize() —— 它会按 sizeHint 重置容器宽度，
+            # 布局随后停在偏窄的旧宽度上（重开面板时卡片右侧留白）
+            self._container.setFixedWidth(viewport_width)
+            self._cards_layout.activate()
+            return self._cards_layout.sizeHint().height()
+
+        width = PANEL_WIDTH
+        content = measure(width)
+        if content + CHROME_HEIGHT > PANEL_MAX_HEIGHT:
+            # 内容超高会出现纵向滚动条，视口变窄，扣掉滚动条宽度重测
+            width -= self._scroll.verticalScrollBar().sizeHint().width()
+            content = measure(width)
+        self.setFixedHeight(min(max(content + CHROME_HEIGHT, 160), PANEL_MAX_HEIGHT))
+
         if bottom is not None:
             self.move(self.x(), bottom - self.height())
             screen = QGuiApplication.screenAt(self.pos()) \

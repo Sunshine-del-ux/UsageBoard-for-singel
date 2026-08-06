@@ -1,6 +1,7 @@
 """入口：QApplication + 托盘 + 面板 + 定时刷新。"""
 from __future__ import annotations
 
+import copy
 import sys
 
 from PySide6.QtCore import QLockFile, QTimer
@@ -10,7 +11,7 @@ from PySide6.QtWidgets import QApplication
 from . import i18n, theme
 from .config import Config, config_dir
 from .panel import Panel
-from .plugins import all_manifests
+from .plugins import all_manifests, localized
 from .settings import SettingsDialog
 from .tray import Tray
 from .worker import WorkerPool
@@ -73,39 +74,63 @@ class UsageBoardApp:
 
     # ─── 刷新 ───
 
+    def _effective_manifests(self) -> list[dict]:
+        """启用插件的默认清单 + 额外账号实例的合成清单（卡片 id = 实例 id）。"""
+        effective: list[dict] = []
+        for manifest in self._manifests:
+            plugin_id = manifest["id"]
+            if not self._config.plugin_enabled(plugin_id):
+                continue
+            effective.append(manifest)
+            for inst in self._config.plugin_instances(plugin_id):
+                synthetic = dict(manifest)
+                synthetic["id"] = inst["id"]
+                synthetic["_type"] = plugin_id  # 实际执行的插件类型
+                if inst["name"]:
+                    for lang in ("zh-Hans", "en"):
+                        base = localized(manifest, "name", lang)
+                        synthetic[f"name@{lang}"] = f"{base} · {inst['name']}"
+                effective.append(synthetic)
+        return effective
+
     def _rebuild_cards(self) -> None:
-        enabled = [m for m in self._manifests if self._config.plugin_enabled(m["id"])]
-        enabled_ids = {m["id"] for m in enabled}
-        for plugin_id in list(self._panel._cards.keys()):
-            if plugin_id not in enabled_ids:
-                self._panel.remove_card(plugin_id)
-        self._panel.set_manifests(enabled)
+        effective = self._effective_manifests()
+        keep = {m["id"] for m in effective}
+        for card_id in list(self._panel._cards.keys()):
+            if card_id not in keep:
+                self._panel.remove_card(card_id)
+        self._panel.set_manifests(effective)
 
     def refresh_all(self) -> None:
         if self._pending:
             return  # 上一轮未完成
         language = i18n.language()
-        for manifest in self._manifests:
-            plugin_id = manifest["id"]
-            if not self._config.plugin_enabled(plugin_id):
-                continue
-            self._pending.add(plugin_id)
-            params = self._config.plugin_params(plugin_id)
-            self._pool.refresh(plugin_id, params, language)
+        for manifest in self._effective_manifests():
+            card_id = manifest["id"]
+            plugin_type = manifest.get("_type", card_id)
+            params = self._config.plugin_params(card_id) \
+                if plugin_type == card_id else self._config.instance_params(card_id)
+            self._pending.add(card_id)
+            self._pool.refresh(plugin_type, params, language, card_id=card_id)
         if self._pending:
             self._panel.set_refreshing(True)
 
-    def _on_result(self, plugin_id: str, result: dict) -> None:
-        self._pending.discard(plugin_id)
-        self._panel.show_result(plugin_id, result)
+    def _on_result(self, card_id: str, result: dict) -> None:
+        self._pending.discard(card_id)
+        self._panel.show_result(card_id, result)
         if not self._pending:
             self._panel.set_refreshing(False)
 
     # ─── 设置 ───
 
     def open_settings(self) -> None:
-        dialog = SettingsDialog(self._config, self._manifests, self._panel)
+        # 暂存配置：取消时丢弃全部改动（包括添加/删除账号）
+        staged = Config(self._config.path)
+        staged.data = copy.deepcopy(self._config.data)
+        dialog = SettingsDialog(staged, self._manifests, self._panel)
         if dialog.exec():
+            self._config.data = staged.data
+            self._config.save()
             language = self._config.language or i18n.system_language()
             i18n.set_language(language)
             self._timer.start(self._config.refresh_interval_sec * 1000)
