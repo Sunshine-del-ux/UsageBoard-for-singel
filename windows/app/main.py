@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 from PySide6.QtCore import QTimer
-from PySide6.QtGui import QColor, QIcon, QPalette
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 
-from . import i18n
+from . import i18n, theme
 from .config import Config
 from .panel import Panel
 from .plugins import all_manifests
@@ -17,48 +16,14 @@ from .tray import Tray
 from .worker import WorkerPool
 
 
-def _icon_path() -> Path:
-    bundle = getattr(sys, "_MEIPASS", None)
-    if bundle:
-        return Path(bundle) / "icon.png"
-    return Path(__file__).resolve().parents[2] / "Resources" / "icon.png"
-
-
-def _apply_light_theme(app: QApplication) -> None:
-    """固定 Fusion 风格 + 浅色调色板。
-
-    面板/卡片本身是浅色硬编码样式；若跟随系统主题（尤其 Windows 11 暗色
-    原生样式），对话框会出现渲染不一致。Fusion 跨平台渲染结果确定。
-    """
-    app.setStyle("Fusion")
-    palette = QPalette()
-    colors = {
-        QPalette.ColorRole.Window: "#f5f5f5",
-        QPalette.ColorRole.WindowText: "#222222",
-        QPalette.ColorRole.Base: "#ffffff",
-        QPalette.ColorRole.AlternateBase: "#f5f5f5",
-        QPalette.ColorRole.ToolTipBase: "#ffffff",
-        QPalette.ColorRole.ToolTipText: "#222222",
-        QPalette.ColorRole.Text: "#222222",
-        QPalette.ColorRole.Button: "#efefef",
-        QPalette.ColorRole.ButtonText: "#222222",
-        QPalette.ColorRole.BrightText: "#ef4444",
-        QPalette.ColorRole.Highlight: "#3b82f6",
-        QPalette.ColorRole.HighlightedText: "#ffffff",
-        QPalette.ColorRole.PlaceholderText: "#999999",
-        QPalette.ColorRole.Link: "#3b82f6",
-        QPalette.ColorRole.Light: "#ffffff",
-        QPalette.ColorRole.Midlight: "#e8e8e8",
-        QPalette.ColorRole.Mid: "#cfcfcf",
-        QPalette.ColorRole.Dark: "#a5a5a5",
-        QPalette.ColorRole.Shadow: "#bdbdbd",
-    }
-    for role, hex_color in colors.items():
-        palette.setColor(role, QColor(hex_color))
-    for role in (QPalette.ColorRole.Text, QPalette.ColorRole.ButtonText,
-                 QPalette.ColorRole.WindowText, QPalette.ColorRole.PlaceholderText):
-        palette.setColor(QPalette.ColorGroup.Disabled, role, QColor("#aaaaaa"))
-    app.setPalette(palette)
+def _apply_theme(app: QApplication) -> None:
+    """Fusion + macOS 浅色主题，并指定接近 San Francisco 观感的字体。"""
+    theme.apply_palette(app)
+    families = ["Segoe UI Variable Text", "Segoe UI"] if sys.platform == "win32" \
+        else [".AppleSystemUIFont", "Helvetica Neue"]
+    font = QFont(families[0], 9)
+    font.setFamilies(families)
+    app.setFont(font)
 
 
 class UsageBoardApp:
@@ -66,9 +31,9 @@ class UsageBoardApp:
         self._qt = QApplication(sys.argv)
         self._qt.setQuitOnLastWindowClosed(False)
         self._qt.setApplicationName("UsageBoard")
-        _apply_light_theme(self._qt)
+        _apply_theme(self._qt)
 
-        icon = QIcon(str(_icon_path()))
+        icon = QIcon(str(theme.app_icon_path()))
         self._qt.setWindowIcon(icon)
 
         self._config = Config()
@@ -90,6 +55,7 @@ class UsageBoardApp:
 
         self._panel.refresh_requested.connect(self.refresh_all)
         self._panel.settings_requested.connect(self.open_settings)
+        self._panel.quit_requested.connect(self._quit)
 
         self._timer = QTimer(self._qt)
         self._timer.timeout.connect(self.refresh_all)

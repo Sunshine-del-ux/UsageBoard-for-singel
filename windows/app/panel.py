@@ -1,24 +1,29 @@
-"""无边框弹出面板：托盘左键切换显示，失焦自动隐藏。"""
+"""无边框弹出面板：托盘左键切换显示，失焦自动隐藏。
+
+布局对齐 Mac 版 OverviewView：圆角弹层 + 顶栏（图标 + 标题 + borderless
+图标按钮）+ 分隔线 + 卡片滚动区。
+"""
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any
 
 from PySide6.QtCore import QEvent, Qt, Signal
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QPixmap
 from PySide6.QtWidgets import (
-    QHBoxLayout, QLabel, QPushButton, QScrollArea, QStyle, QVBoxLayout, QWidget,
+    QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
-from . import i18n
+from . import i18n, icons, theme
 from .cards import PluginCard
 
-PANEL_WIDTH = 360
+PANEL_WIDTH = 380       # Mac 弹层宽 380
 PANEL_MAX_HEIGHT = 560
 
 
 class Panel(QWidget):
     refresh_requested = Signal()
     settings_requested = Signal()
+    quit_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -27,36 +32,55 @@ class Panel(QWidget):
             | Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
         )
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setFixedWidth(PANEL_WIDTH)
-        self.setStyleSheet("background: #f3f3f3; border: 1px solid #d9d9d9;")
+        self.setObjectName("panelRoot")
+        self.setStyleSheet(
+            f"#panelRoot {{ background: {theme.CANVAS};"
+            f" border: 1px solid {theme.CARD_BORDER}; border-radius: 12px; }}"
+        )
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(10, 8, 10, 10)
-        root.setSpacing(8)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
 
-        # ─── 顶部工具行 ───
-        toolbar = QHBoxLayout()
-        title = QLabel("UsageBoard")
-        title.setStyleSheet("color: #222; font-size: 14px; font-weight: 700;")
-        toolbar.addWidget(title)
-        toolbar.addStretch(1)
+        # ─── 顶栏：应用图标 + 标题 + 刷新/设置/退出 ───
+        header = QWidget()
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(14, 10, 12, 8)
+        header_layout.setSpacing(4)
 
-        self._refresh_button = QPushButton()
-        self._refresh_button.setIcon(
-            self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload)
+        icon_label = QLabel()
+        icon_label.setPixmap(
+            QPixmap(str(theme.app_icon_path())).scaled(
+                22, 22,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
         )
-        self._refresh_button.setFixedSize(28, 28)
-        self._refresh_button.setToolTip(i18n.tr("refresh_now"))
-        self._refresh_button.clicked.connect(self.refresh_requested)
-        toolbar.addWidget(self._refresh_button)
+        icon_label.setFixedSize(22, 22)
+        header_layout.addWidget(icon_label)
+        header_layout.addSpacing(6)
 
-        self._settings_button = QPushButton("⚙")
-        self._settings_button.setFixedSize(28, 28)
-        self._settings_button.setToolTip(i18n.tr("settings"))
+        title = QLabel("UsageBoard")
+        title.setStyleSheet("font-size: 13px; font-weight: 600;")
+        header_layout.addWidget(title)
+        header_layout.addStretch(1)
+
+        self._refresh_button = self._make_tool_button("refresh", i18n.tr("refresh_now"))
+        self._refresh_button.clicked.connect(self.refresh_requested)
+        header_layout.addWidget(self._refresh_button)
+
+        self._settings_button = self._make_tool_button("gear", i18n.tr("settings"))
         self._settings_button.clicked.connect(self.settings_requested)
-        toolbar.addWidget(self._settings_button)
-        root.addLayout(toolbar)
+        header_layout.addWidget(self._settings_button)
+
+        quit_button = self._make_tool_button("power", i18n.tr("quit"))
+        quit_button.clicked.connect(self.quit_requested)
+        header_layout.addWidget(quit_button)
+        root.addWidget(header)
+
+        root.addWidget(theme.divider())
 
         # ─── 卡片滚动区 ───
         self._scroll = QScrollArea()
@@ -66,13 +90,25 @@ class Panel(QWidget):
         self._container = QWidget()
         self._container.setStyleSheet("background: transparent;")
         self._cards_layout = QVBoxLayout(self._container)
-        self._cards_layout.setContentsMargins(0, 0, 0, 0)
+        self._cards_layout.setContentsMargins(12, 8, 12, 12)
         self._cards_layout.setSpacing(10)
         self._cards_layout.addStretch(1)
         self._scroll.setWidget(self._container)
         root.addWidget(self._scroll)
 
         self._cards: dict[str, PluginCard] = {}
+
+    @staticmethod
+    def _make_tool_button(icon_kind: str, tooltip: str) -> QPushButton:
+        from PySide6.QtCore import QSize
+        button = QPushButton()
+        button.setIcon(icons.icon(icon_kind))
+        button.setIconSize(QSize(16, 16))
+        button.setFixedSize(26, 26)
+        button.setToolTip(tooltip)
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setStyleSheet(theme.TOOL_BUTTON_STYLE)
+        return button
 
     def set_manifests(self, manifests: list[dict[str, Any]]) -> None:
         for manifest in manifests:
@@ -119,7 +155,7 @@ class Panel(QWidget):
 
     def _fit_height(self) -> None:
         self._container.adjustSize()
-        content = self._container.sizeHint().height() + 60
+        content = self._container.sizeHint().height() + 48  # 顶栏 + 分隔线
         self.setFixedHeight(min(max(content, 160), PANEL_MAX_HEIGHT))
 
     def changeEvent(self, event: QEvent) -> None:
