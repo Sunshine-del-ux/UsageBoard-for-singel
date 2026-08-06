@@ -177,9 +177,19 @@ class Panel(QWidget):
             pass
 
     def _fit_height(self) -> None:
+        # 可见时记住底边：高度变化要向上生长，否则下沿会超出屏幕遮住托盘
+        bottom = self.y() + self.height() if self.isVisible() else None
         self._container.adjustSize()
         content = self._container.sizeHint().height() + 48  # 顶栏 + 分隔线
         self.setFixedHeight(min(max(content, 160), PANEL_MAX_HEIGHT))
+        if bottom is not None:
+            self.move(self.x(), bottom - self.height())
+            screen = QGuiApplication.screenAt(self.pos()) \
+                or QGuiApplication.primaryScreen()
+            if screen is not None:
+                top_limit = screen.availableGeometry().top() + 12
+                if self.y() < top_limit:
+                    self.move(self.x(), top_limit)
 
     def _refit(self) -> None:
         """内容变化后随内容自适应高度（仅在弹层可见时）。
