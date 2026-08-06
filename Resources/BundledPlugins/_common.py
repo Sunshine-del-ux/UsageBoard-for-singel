@@ -71,7 +71,7 @@ def utc_now_iso() -> str:
 
 # ─── Output ─────────────────────────────────────────────────────────────────────
 
-def success(items: list[dict[str, Any]], badge: str | None = None, chart: dict[str, Any] | None = None, badgeColor: str | None = None) -> int:
+def success_dict(items: list[dict[str, Any]], badge: str | None = None, chart: dict[str, Any] | None = None, badgeColor: str | None = None) -> dict[str, Any]:
     result: dict[str, Any] = {"schemaVersion": SCHEMA_VERSION, "updatedAt": utc_now_iso(), "items": items}
     if badge:
         result["badge"] = badge
@@ -79,12 +79,20 @@ def success(items: list[dict[str, Any]], badge: str | None = None, chart: dict[s
         result["chart"] = chart
     if badgeColor:
         result["badgeColor"] = badgeColor
-    print(json.dumps(result, ensure_ascii=False))
+    return result
+
+
+def failure_dict(message: str) -> dict[str, Any]:
+    return {"error": message}
+
+
+def success(items: list[dict[str, Any]], badge: str | None = None, chart: dict[str, Any] | None = None, badgeColor: str | None = None) -> int:
+    print(json.dumps(success_dict(items, badge, chart, badgeColor), ensure_ascii=False))
     return 0
 
 
 def failure(message: str) -> int:
-    print(json.dumps({"error": message}, ensure_ascii=False))
+    print(json.dumps(failure_dict(message), ensure_ascii=False))
     return 0
 
 
@@ -133,28 +141,38 @@ def color_for_pct(pct: float) -> str:
 
 # ─── HTTP error handling ────────────────────────────────────────────────────────
 
-def handle_http_error(error: urllib.error.HTTPError, translate: Any, language: str) -> int:
+def http_error_dict(error: urllib.error.HTTPError, translate: Any, language: str) -> dict[str, Any]:
     if error.code == 401:
-        return failure(translate(language, "http_401", code=error.code))
+        return failure_dict(translate(language, "http_401", code=error.code))
     if error.code == 403:
-        return failure(translate(language, "http_403", code=error.code))
+        return failure_dict(translate(language, "http_403", code=error.code))
     if error.code == 429:
-        return failure(translate(language, "http_429", code=error.code))
+        return failure_dict(translate(language, "http_429", code=error.code))
     if error.code >= 500:
-        return failure(translate(language, "http_5xx", code=error.code))
-    return failure(translate(language, "http_other", code=error.code))
+        return failure_dict(translate(language, "http_5xx", code=error.code))
+    return failure_dict(translate(language, "http_other", code=error.code))
+
+
+def url_error_dict(error: urllib.error.URLError, translate: Any, language: str) -> dict[str, Any]:
+    reason = error.reason
+    if isinstance(reason, ssl.SSLCertVerificationError):
+        return failure_dict(translate(language, "ssl_error"))
+    if isinstance(reason, ssl.SSLError):
+        return failure_dict(translate(language, "ssl_error"))
+    if isinstance(reason, (socket.timeout, TimeoutError)):
+        return failure_dict(translate(language, "request_timeout"))
+    if isinstance(reason, ConnectionRefusedError):
+        return failure_dict(translate(language, "connection_error"))
+    if isinstance(reason, OSError):
+        return failure_dict(translate(language, "connection_error"))
+    return failure_dict(translate(language, "network_error"))
+
+
+def handle_http_error(error: urllib.error.HTTPError, translate: Any, language: str) -> int:
+    print(json.dumps(http_error_dict(error, translate, language), ensure_ascii=False))
+    return 0
 
 
 def handle_url_error(error: urllib.error.URLError, translate: Any, language: str) -> int:
-    reason = error.reason
-    if isinstance(reason, ssl.SSLCertVerificationError):
-        return failure(translate(language, "ssl_error"))
-    if isinstance(reason, ssl.SSLError):
-        return failure(translate(language, "ssl_error"))
-    if isinstance(reason, (socket.timeout, TimeoutError)):
-        return failure(translate(language, "request_timeout"))
-    if isinstance(reason, ConnectionRefusedError):
-        return failure(translate(language, "connection_error"))
-    if isinstance(reason, OSError):
-        return failure(translate(language, "connection_error"))
-    return failure(translate(language, "network_error"))
+    print(json.dumps(url_error_dict(error, translate, language), ensure_ascii=False))
+    return 0

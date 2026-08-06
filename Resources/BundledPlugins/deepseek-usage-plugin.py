@@ -45,13 +45,12 @@ from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 from _common import (  # noqa: E402
-    failure,
-    handle_http_error,
-    handle_url_error,
+    failure_dict,
+    http_error_dict,
     make_translator,
     parse_usageboard_params,
-    success,
-    utc_now_iso,
+    success_dict,
+    url_error_dict,
 )
 
 
@@ -113,8 +112,7 @@ def build_items(data: dict[str, Any], language: str, limit_amount: float, transl
     return items
 
 
-def main() -> int:
-    params = parse_usageboard_params(sys.argv[1:])
+def run(params: dict[str, str]) -> dict[str, Any]:
     language = params.get("USAGEBOARD_LANGUAGE", "en")
     language = "en" if language == "en" else "zh-Hans"
     translate = make_translator({
@@ -123,28 +121,34 @@ def main() -> int:
 
     api_key = params.get("API_KEY", "")
     if not api_key:
-        return failure(translate(language, "missing_api_key"))
+        return failure_dict(translate(language, "missing_api_key"))
     limit_amount = parse_limit(params.get("LIMIT", ""))
 
     try:
         payload = fetch_balance(api_key)
     except urllib.error.HTTPError as error:
-        return handle_http_error(error, translate, language)
+        return http_error_dict(error, translate, language)
     except urllib.error.URLError as error:
-        return handle_url_error(error, translate, language)
+        return url_error_dict(error, translate, language)
     except TimeoutError:
-        return failure(translate(language, "request_timeout"))
+        return failure_dict(translate(language, "request_timeout"))
     except json.JSONDecodeError:
-        return failure(translate(language, "usage_parse_failed"))
+        return failure_dict(translate(language, "usage_parse_failed"))
     except Exception:
-        return failure(translate(language, "network_error"))
+        return failure_dict(translate(language, "network_error"))
 
     try:
         items = build_items(payload, language, limit_amount, translate)
     except Exception:
-        return failure(translate(language, "usage_parse_failed"))
+        return failure_dict(translate(language, "usage_parse_failed"))
 
-    return success(items)
+    return success_dict(items)
+
+
+def main() -> int:
+    params = parse_usageboard_params(sys.argv[1:])
+    print(json.dumps(run(params), ensure_ascii=False))
+    return 0
 
 
 if __name__ == "__main__":

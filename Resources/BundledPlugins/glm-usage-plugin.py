@@ -53,12 +53,12 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 from _common import (  # noqa: E402
     app_language,
     color_for_pct,
-    failure,
-    handle_http_error,
-    handle_url_error,
+    failure_dict,
+    http_error_dict,
     make_translator,
     parse_usageboard_params,
-    success,
+    success_dict,
+    url_error_dict,
     utc_now_iso,
 )
 
@@ -793,8 +793,7 @@ def chart_message(message: str, period: str, buckets: list[datetime], bucket_uni
     }
 
 
-def main() -> int:
-    params = parse_usageboard_params(sys.argv[1:])
+def run(params: dict[str, str]) -> dict[str, Any]:
     api_key = params.get("API_KEY")
     period = params.get("STAT_PERIOD", "7d").lower()
     if period not in ("7d", "15d", "30d"):
@@ -803,28 +802,28 @@ def main() -> int:
     translate = make_translator(TRANSLATIONS)
 
     if not api_key:
-        return failure(translate(language, "missing_api_key"))
+        return failure_dict(translate(language, "missing_api_key"))
 
     try:
         payload = fetch_limits(api_key)
     except urllib.error.HTTPError as error:
-        return handle_http_error(error, translate, language)
+        return http_error_dict(error, translate, language)
     except urllib.error.URLError as error:
-        return handle_url_error(error, translate, language)
+        return url_error_dict(error, translate, language)
     except TimeoutError:
-        return failure(translate(language, "request_timeout"))
+        return failure_dict(translate(language, "request_timeout"))
     except json.JSONDecodeError:
-        return failure(translate(language, "usage_parse_failed"))
+        return failure_dict(translate(language, "usage_parse_failed"))
     except Exception:
-        return failure(translate(language, "network_error"))
+        return failure_dict(translate(language, "network_error"))
 
     try:
         items, badge = build_items(payload, language)
     except Exception:
-        return failure(translate(language, "usage_parse_failed"))
+        return failure_dict(translate(language, "usage_parse_failed"))
 
     if not items:
-        return failure(translate(language, "no_quota_items"))
+        return failure_dict(translate(language, "no_quota_items"))
 
     _, _, buckets, bucket_unit = stat_range(period)
     try:
@@ -832,7 +831,13 @@ def main() -> int:
         chart = build_chart_from_cache(daily, period, language)
     except Exception:
         chart = chart_message(translate(language, "stats_query_failed"), period, buckets, bucket_unit)
-    return success(items, badge=badge, chart=chart)
+    return success_dict(items, badge=badge, chart=chart)
+
+
+def main() -> int:
+    params = parse_usageboard_params(sys.argv[1:])
+    print(json.dumps(run(params), ensure_ascii=False))
+    return 0
 
 
 if __name__ == "__main__":

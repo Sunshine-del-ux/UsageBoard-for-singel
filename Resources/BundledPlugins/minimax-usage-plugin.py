@@ -53,14 +53,14 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 from _common import (  # noqa: E402
     app_language,
     color_for_pct,
-    failure,
-    handle_http_error,
-    handle_url_error,
+    failure_dict,
+    http_error_dict,
     make_translator,
     numeric,
     parse_usageboard_params,
     status_for,
-    success,
+    success_dict,
+    url_error_dict,
 )
 
 
@@ -159,8 +159,7 @@ def plan_badge(params: dict[str, str]) -> str | None:
     return plan.capitalize()
 
 
-def main() -> int:
-    params = parse_usageboard_params(sys.argv[1:])
+def run(params: dict[str, str]) -> dict[str, Any]:
     language = app_language(params)
     translate = make_translator({
         "model_general":   {"zh-Hans": "文本",  "en": "Text"},
@@ -175,35 +174,41 @@ def main() -> int:
 
     api_key = params.get("API_KEY")
     if not api_key:
-        return failure(translate(language, "missing_api_key"))
+        return failure_dict(translate(language, "missing_api_key"))
 
     try:
         payload = fetch_remains(api_key)
     except urllib.error.HTTPError as error:
-        return handle_http_error(error, translate, language)
+        return http_error_dict(error, translate, language)
     except urllib.error.URLError as error:
-        return handle_url_error(error, translate, language)
+        return url_error_dict(error, translate, language)
     except TimeoutError:
-        return failure(translate(language, "request_timeout"))
+        return failure_dict(translate(language, "request_timeout"))
     except json.JSONDecodeError:
-        return failure(translate(language, "usage_parse_failed"))
+        return failure_dict(translate(language, "usage_parse_failed"))
     except Exception:
-        return failure(translate(language, "network_error"))
+        return failure_dict(translate(language, "network_error"))
 
     try:
         status_code = payload.get("base_resp", {}).get("status_code", 0)
         if status_code != 0:
             if status_code == 2049:
-                return failure(translate(language, "invalid_api_key"))
+                return failure_dict(translate(language, "invalid_api_key"))
             status_msg = payload.get("base_resp", {}).get("status_msg", "")
-            return failure(f"{status_msg} ({status_code})" if status_msg else str(status_code))
+            return failure_dict(f"{status_msg} ({status_code})" if status_msg else str(status_code))
         items = build_items(payload, language, translate)
     except Exception:
-        return failure(translate(language, "usage_parse_failed"))
+        return failure_dict(translate(language, "usage_parse_failed"))
 
     if not items:
-        return failure(translate(language, "no_quota_items"))
-    return success(items, badge=plan_badge(params))
+        return failure_dict(translate(language, "no_quota_items"))
+    return success_dict(items, badge=plan_badge(params))
+
+
+def main() -> int:
+    params = parse_usageboard_params(sys.argv[1:])
+    print(json.dumps(run(params), ensure_ascii=False))
+    return 0
 
 
 if __name__ == "__main__":
