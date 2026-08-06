@@ -17,6 +17,8 @@ python -m pip install -r windows\requirements.txt
 if errorlevel 1 exit /b 1
 
 echo [2/3] 清理旧构建...
+rem 若旧版正在运行，先结束进程，否则 dist\UsageBoard.exe 会被占用
+taskkill /f /im UsageBoard.exe >nul 2>nul
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
 
