@@ -5,6 +5,8 @@
 """
 from __future__ import annotations
 
+import sys
+import time
 from typing import Any
 
 from PySide6.QtCore import QEvent, Qt, QTimer, Signal
@@ -99,6 +101,7 @@ class Panel(QWidget):
         root.addWidget(self._scroll)
 
         self._cards: dict[str, PluginCard] = {}
+        self._hidden_at = 0.0  # 最近一次失焦自动隐藏的时间戳
 
     @staticmethod
     def _make_tool_button(icon_kind: str, tooltip: str) -> QPushButton:
@@ -144,9 +147,18 @@ class Panel(QWidget):
         if self.isVisible():
             self.hide()
             return
+        # 点托盘图标会先让面板失焦自动隐藏，随后 activated 信号才到；
+        # 若刚刚因此隐藏，说明用户意图是收起而非重新打开
+        if time.monotonic() - self._hidden_at < 0.35:
+            return
         self.show_near()
 
     def show_near(self) -> None:
+        self._dismiss_tray_flyout()
+        # 等 ESC 收掉系统托盘弹窗后再显示，避免被遮挡
+        QTimer.singleShot(80, self._show_and_position)
+
+    def _show_and_position(self) -> None:
         self._fit_height()
         screen = QGuiApplication.screenAt(self.pos()) or QGuiApplication.primaryScreen()
         if screen is not None:
@@ -157,6 +169,19 @@ class Panel(QWidget):
         self.show()
         self.raise_()
         self.activateWindow()
+
+    @staticmethod
+    def _dismiss_tray_flyout() -> None:
+        """Windows：发送 ESC 收起托盘溢出弹窗/菜单，避免遮挡面板。"""
+        if sys.platform != "win32":
+            return
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32
+            user32.keybd_event(0x1B, 0, 0, 0)          # ESC 按下
+            user32.keybd_event(0x1B, 0, 0x0002, 0)     # ESC 抬起（KEYEVENTF_KEYUP）
+        except Exception:
+            pass
 
     def _fit_height(self) -> None:
         self._container.adjustSize()
@@ -171,6 +196,10 @@ class Panel(QWidget):
         if self.isVisible():
             self._fit_height()
             QTimer.singleShot(0, self._fit_height)
+
+    def hideEvent(self, event: QEvent) -> None:
+        self._hidden_at = time.monotonic()
+        super().hideEvent(event)
 
     def changeEvent(self, event: QEvent) -> None:
         if event.type() == QEvent.Type.WindowDeactivate:
