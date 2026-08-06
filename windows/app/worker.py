@@ -23,7 +23,10 @@ class RefreshJob(QRunnable):
         self._signals.finished.connect(on_finished)
 
     def run(self) -> None:
-        result = run_plugin(self._plugin_id, self._params, self._language)
+        try:
+            result = run_plugin(self._plugin_id, self._params, self._language)
+        except Exception as exc:  # run_plugin 理论上不会抛，兜底防止卡片永远停在加载中
+            result = {"error": f"插件执行失败: {self._plugin_id}: {type(exc).__name__}: {exc}"}
         self._signals.finished.emit(self._plugin_id, result)
 
 

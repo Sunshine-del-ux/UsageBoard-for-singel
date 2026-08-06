@@ -6,7 +6,7 @@ from typing import Any, Callable
 from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
-    QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QHBoxLayout, QLabel, QPushButton, QScrollArea, QStyle, QVBoxLayout, QWidget,
 )
 
 from . import i18n
@@ -42,7 +42,10 @@ class Panel(QWidget):
         toolbar.addWidget(title)
         toolbar.addStretch(1)
 
-        self._refresh_button = QPushButton("⟳")
+        self._refresh_button = QPushButton()
+        self._refresh_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload)
+        )
         self._refresh_button.setFixedSize(28, 28)
         self._refresh_button.setToolTip(i18n.tr("refresh_now"))
         self._refresh_button.clicked.connect(self.refresh_requested)
@@ -93,7 +96,6 @@ class Panel(QWidget):
 
     def set_refreshing(self, refreshing: bool) -> None:
         self._refresh_button.setEnabled(not refreshing)
-        self._refresh_button.setText("…" if refreshing else "⟳")
 
     # ─── 显示/定位 ───
 

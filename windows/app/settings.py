@@ -27,7 +27,7 @@ class SettingsDialog(QDialog):
         layout = QVBoxLayout(self)
 
         # ─── 通用设置 ───
-        general = QGroupBox(i18n.tr("settings"))
+        general = QGroupBox(i18n.tr("settings_general"))
         form = QFormLayout(general)
 
         self._language_combo = QComboBox()

@@ -77,6 +77,32 @@ def _load_module(plugin_id: str) -> Any:
     return module
 
 
+def _error_message(plugin_id: str, exc: BaseException) -> str:
+    detail = f"{type(exc).__name__}: {exc}".replace("\n", " ").strip()
+    if len(detail) > 200:
+        detail = detail[:200] + "…"
+    return f"插件执行失败: {plugin_id}: {detail}"
+
+
+def _log_failure(plugin_id: str) -> None:
+    """把完整 traceback 追加到日志文件（windowed exe 没有控制台可看）。"""
+    try:
+        from datetime import datetime
+        from .config import config_dir
+
+        path = config_dir() / "usageboard.log"
+        if path.exists() and path.stat().st_size > 1_000_000:
+            # 简单轮转：只保留末尾约 400KB，避免长期失败把日志写爆
+            tail = path.read_bytes()[-400_000:].decode("utf-8", errors="ignore")
+            path.write_text(tail, encoding="utf-8")
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(f"===== {datetime.now().isoformat(timespec='seconds')} [{plugin_id}] =====\n")
+            traceback.print_exc(file=fh)
+            fh.write("\n")
+    except Exception:
+        pass
+
+
 def run_plugin(plugin_id: str, params: dict[str, str], language: str) -> dict[str, Any]:
     """进程内调用插件 run()，任何异常都收敛为 failure 字典。"""
     from .config import cache_dir
@@ -90,6 +116,6 @@ def run_plugin(plugin_id: str, params: dict[str, str], language: str) -> dict[st
         if not isinstance(result, dict):
             return {"error": f"插件返回格式异常: {plugin_id}"}
         return result
-    except Exception:
-        traceback.print_exc()
-        return {"error": f"插件执行失败: {plugin_id}"}
+    except Exception as exc:
+        _log_failure(plugin_id)
+        return {"error": _error_message(plugin_id, exc)}

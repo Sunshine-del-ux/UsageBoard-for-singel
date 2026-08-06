@@ -7,6 +7,7 @@ STRINGS: dict[str, dict[str, str]] = {
     "hide_panel":       {"zh-Hans": "隐藏面板", "en": "Hide Panel"},
     "refresh_now":      {"zh-Hans": "立即刷新", "en": "Refresh Now"},
     "settings":         {"zh-Hans": "设置", "en": "Settings"},
+    "settings_general": {"zh-Hans": "通用", "en": "General"},
     "quit":             {"zh-Hans": "退出", "en": "Quit"},
     "refreshing":       {"zh-Hans": "刷新中…", "en": "Refreshing…"},
     "updated_at":       {"zh-Hans": "更新于 {time}", "en": "Updated at {time}"},
