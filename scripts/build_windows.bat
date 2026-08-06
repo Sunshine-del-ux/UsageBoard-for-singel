@@ -2,6 +2,7 @@
 rem UsageBoard Windows 打包脚本（在 Windows 上运行）
 rem 产物：dist\UsageBoard.exe（单文件，无需安装 Python）
 setlocal
+chcp 65001 >nul
 
 cd /d "%~dp0\.."
 
@@ -28,7 +29,7 @@ python -m PyInstaller ^
     --icon windows\icon.ico ^
     --add-data "Resources\BundledPlugins;plugins" ^
     --add-data "Resources\icon.png;." ^
-    windows\app\main.py
+    windows\launcher.py
 
 if errorlevel 1 (
     echo [错误] 打包失败
