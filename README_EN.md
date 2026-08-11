@@ -58,7 +58,7 @@ UsageBoard is a native macOS menu bar app that aggregates and displays usage quo
 This fork additionally provides a Windows port: a **Python + PySide6** system tray app, packaged by PyInstaller into a single portable exe. It shares the same bundled plugins (`Resources/BundledPlugins/`) with the macOS version.
 
 - Resides in the tray; left-click toggles the usage panel at the bottom-right corner, with a collapse button in the panel header
-- 4 bundled API plugins: DeepSeek, Kimi, Zhipu GLM, MiniMax
+- 5 bundled API plugins: DeepSeek, Kimi, Zhipu GLM, MiniMax, Volcengine Ark
 - **Multi-account** support for the same plugin type: each instance gets its own label and parameters, rendered as a separate card
 - macOS-style light UI, Chinese/English switching, scheduled auto-refresh (5 minutes by default)
 
@@ -74,6 +74,7 @@ Build and development instructions: [windows/README.md](windows/README.md).
 | MiniMax | `minimax-usage-plugin.py` | Query MiniMax Coding Plan usage |
 | DeepSeek | `deepseek-usage-plugin.py` | Query DeepSeek account balance |
 | Kimi | `kimi-usage-plugin.py` | Query Kimi Code usage |
+| Volcengine Ark | `ark-usage-plugin.py` | Query Volcengine Ark Coding Plan usage (requires Volcengine AK/SK) |
 | Tavily | `tavily-usage-plugin.py` | Query Tavily Search monthly usage |
 
 Bundled plugin source files are in [Resources/BundledPlugins](Resources/BundledPlugins). After packaging, they reside in the app bundle at `Contents/Resources/Plugins/`.

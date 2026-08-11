@@ -9,12 +9,13 @@ import traceback
 from pathlib import Path
 from typing import Any
 
-# v1 仅内置 4 个 API 插件
+# v1 仅内置 5 个 API 插件
 PLUGIN_IDS = [
     "deepseek-usage-plugin",
     "kimi-usage-plugin",
     "glm-usage-plugin",
     "minimax-usage-plugin",
+    "ark-usage-plugin",
 ]
 
 MANIFEST_BEGIN = "# UsageBoardPlugin:"

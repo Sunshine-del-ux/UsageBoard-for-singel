@@ -58,7 +58,7 @@ UsageBoard 是一个原生 macOS 菜单栏应用，用于聚合展示 API、模�
 本分支额外提供 Windows 移植版：**Python + PySide6** 系统托盘应用，PyInstaller 打包为单文件 exe，免安装双击即用。与 macOS 版共用同一套内置插件（`Resources/BundledPlugins/`）。
 
 - 托盘常驻，左键单击在屏幕右下角弹出/收起用量面板，面板顶栏也有收起按钮
-- 内置 4 个 API 插件：DeepSeek、Kimi、智谱 GLM、MiniMax
+- 内置 5 个 API 插件：DeepSeek、Kimi、智谱 GLM、MiniMax、火山方舟
 - 支持同类型插件**多账号**：每个实例独立备注名与参数，面板按账号分卡展示
 - macOS 风格浅色界面，中英文切换，定时自动刷新（默认 5 分钟）
 
@@ -74,6 +74,7 @@ UsageBoard 是一个原生 macOS 菜单栏应用，用于聚合展示 API、模�
 | MiniMax | `minimax-usage-plugin.py` | 查询 MiniMax Coding Plan 用量 |
 | DeepSeek | `deepseek-usage-plugin.py` | 查询 DeepSeek 账户余额 |
 | Kimi | `kimi-usage-plugin.py` | 查询 Kimi Code 用量 |
+| 火山方舟 | `ark-usage-plugin.py` | 查询火山方舟 Coding Plan 用量（需火山引擎 AK/SK） |
 | Tavily | `tavily-usage-plugin.py` | 查询 Tavily Search 月度用量 |
 
 内置插件源文件位于 [Resources/BundledPlugins](Resources/BundledPlugins)，其中 `_common.py` 是插件共享的公共模块，提供参数解析、翻译、HTTP 错误处理等工具函数。打包后它们会位于 app 包的 `Contents/Resources/Plugins/`。
@@ -320,7 +321,7 @@ UsageBoard 会额外传入当前 app 语言参数：`--usageboard-param USAGEBOA
 - `chart.message`：可选提示文案，统计数据为空或不可用时显示。
 - `error`：可选顶层错误信息；存在且非空时，该插件本次运行会被视为失败，错误文本显示在卡片内容区。
 
-内置智谱、Claude 和 Codex 插件提供 `STAT_PERIOD` 参数，支持 `7d`、`15d`、`30d`。智谱插件统一使用国内站 API 查询，兼容智谱和 ZAI 的 Coding Plan Key。Claude 插件通过 OAuth API 获取订阅用量，`PLAN` 参数支持 `none`（无）选项，选择后跳过 API 调用仅返回本地 JSONL 统计数据；还支持 `CLAUDE_ONLY` 开关过滤第三方模型，并可通过 `DATA_DIR` 指定 `~/.claude` 数据目录。Codex 插件通过 `DATA_DIR` 参数指定数据目录（默认 `~/.codex`），从中读取 `auth.json` 获取认证令牌，并解析会话文件生成 token 统计。Claude 和 Codex 插件使用增量缓存策略，缓存存放在数据目录中，且每次运行都会重新扫描当天数据。DeepSeek 插件提供 `LIMIT` 参数用于设置余额展示上限，并按余额占上限比例显示进度条颜色。Kimi 插件查询 Kimi Code 的 5 小时滚动窗口和周用量，并根据接口返回的会员等级自动显示对应订阅计划；未知等级不显示计划徽标。
+内置智谱、Claude 和 Codex 插件提供 `STAT_PERIOD` 参数，支持 `7d`、`15d`、`30d`。智谱插件统一使用国内站 API 查询，兼容智谱和 ZAI 的 Coding Plan Key。Claude 插件通过 OAuth API 获取订阅用量，`PLAN` 参数支持 `none`（无）选项，选择后跳过 API 调用仅返回本地 JSONL 统计数据；还支持 `CLAUDE_ONLY` 开关过滤第三方模型，并可通过 `DATA_DIR` 指定 `~/.claude` 数据目录。Codex 插件通过 `DATA_DIR` 参数指定数据目录（默认 `~/.codex`），从中读取 `auth.json` 获取认证令牌，并解析会话文件生成 token 统计。Claude 和 Codex 插件使用增量缓存策略，缓存存放在数据目录中，且每次运行都会重新扫描当天数据。DeepSeek 插件提供 `LIMIT` 参数用于设置余额展示上限，并按余额占上限比例显示进度条颜色。Kimi 插件查询 Kimi Code 的 5 小时滚动窗口和周用量，并根据接口返回的会员等级自动显示对应订阅计划；未知等级不显示计划徽标。火山方舟插件通过火山引擎 OpenAPI 查询 Coding Plan 的 5 小时、周、月配额（需配置 IAM 的 Access Key / Secret Key，推理 API Key 不支持查询配额），并按套餐等级显示 Lite/Pro 徽标。
 
 ## 安装
 

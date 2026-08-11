@@ -8,20 +8,21 @@ from windows.app.plugins import (
 )
 
 
-def test_all_four_plugins_present():
+def test_all_plugins_present():
     for plugin_id in PLUGIN_IDS:
         assert plugin_path(plugin_id).exists(), plugin_id
 
 
 def test_manifests_parse_and_have_parameters():
     manifests = all_manifests()
-    assert len(manifests) == 4
+    assert len(manifests) == 5
     for manifest in manifests:
         assert manifest["schemaVersion"] == 1
         assert manifest["name"]
         assert manifest["id"].endswith("-usage-plugin")
-        param_names = [p["name"] for p in manifest.get("parameters", [])]
-        assert "API_KEY" in param_names, manifest["id"]
+        secrets = [p for p in manifest.get("parameters", [])
+                   if p.get("type") == "secret" and p.get("required")]
+        assert secrets, manifest["id"]
 
 
 def test_manifest_cached():
